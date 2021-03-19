@@ -6,11 +6,13 @@
 let canvasDiv;
 let canvas;
 let ctx;
-let WIDTH = 500;
-let HEIGHT= 500;
+let WIDTH = 768;
+let HEIGHT= 768;
+let GRAVITY = 9.8; 
 
-//container array for mobs/enemies
-let mobs = [];
+//array for mobs/enemies
+let mobs1 = [];
+let mobs2 = [];
 
 // lets us know if game is initialized
 let initialized = false;
@@ -33,19 +35,6 @@ let mouseClicks = {
 let mouseClickX = 0;
 let mouseClickY = 0;
 
-// creating object with keys pressed
-
-let keysDown = {};
-
-addEventListener("keydown", function (e) {
-    keysDown[e.key] = true;
-}, false);
-
-addEventListener("keyup", function (e) {
-    delete keysDown[e.key];
-}, false);
-
-
 function init() {
   // create a new div element
   canvasDiv = document.createElement("div");
@@ -65,6 +54,7 @@ function init() {
   initialized = true;
 }
 
+// Noah suggested we create a sprite
 class Sprite {
   constructor(w, h, x, y, c) {
     this.w = w;
@@ -75,11 +65,15 @@ class Sprite {
     this.spliced = false;
     }
     inbounds(){
-      if ((this.x)<0 || (this.x+this.w)>500|| (this.y+this.h)>500|| (this.y)<0){
-        return false;
+      if (this.x + this.w < WIDTH &&
+          this.x > 0 &&
+          this.y > 0 &&
+          this.y + this.h < HEIGHT){
+            console.log ('inbounds..');
+        return true;
       }
       else{
-        return true;
+        return false;
       }
     }
     collide(obj) {
@@ -88,7 +82,6 @@ class Sprite {
         this.y <= obj.y + obj.h &&
         obj.y <= this.y + this.h
       ) {
-        console.log('collided with ' + obj);
         return true;
       }
     }
@@ -100,6 +93,7 @@ class Player extends Sprite {
   this.vx = vx;
   this.vy = vy;
   this.speed = 3;
+  this.canjump = true;
   }
   moveinput() {
     if ('w' in keysDown || 'W' in keysDown) { // Player control
@@ -117,14 +111,38 @@ class Player extends Sprite {
     } else if ('d' in keysDown || 'D' in keysDown) { // Player control
         this.vy = 0;
         this.vx = this.speed;
-    }
+    } else if ('e' in keysDown || 'D' in keysDown) { // Player control
+      this.w += 1;
+  }
+    else if (' ' in keysDown && this.canjump) { // Player control
+      console.log(this.canjump);
+      this.vy -= 45;
+      this.canjump = false;
+      
+  }
     else{
       this.vx = 0;
       this.vy = 0;
     }
 }
   update(){
+    this.vy = GRAVITY;
     this.moveinput();
+    if (!this.inbounds()){
+      if (this.x <= 0) {
+        this.x = 0;
+      }
+      if (this.x + this.w >= WIDTH) {
+        this.x = WIDTH-this.w;
+      }
+      if (this.y+this.h >= HEIGHT) {
+        this.y = HEIGHT-this.h;
+        this.canjump = true;
+      }
+      // alert('out of bounds');
+      // console.log('out of bounds');
+    }
+    
     this.x += this.vx;
     this.y += this.vy;
   }
@@ -140,10 +158,21 @@ class Mob extends Sprite {
     super(w, h, x, y, c);
     this.vx = vx;
     this.vy = vy;
+    this.type = "normal";
     }
     update(){
       this.x += this.vx;
       this.y += this.vy;
+      if (!this.inbounds()){
+        if (this.x < 0 || this.x > WIDTH) {
+          this.vx *= -1;
+        }
+        if (this.y < 0 || this.y > HEIGHT) {
+          this.vy *= -1;
+        }
+        // alert('out of bounds');
+        // console.log('out of bounds');
+      }
     }
     draw() {
       ctx.fillStyle = this.color;
@@ -152,20 +181,29 @@ class Mob extends Sprite {
     }
 }
 
-
 // create instance of class
 let player = new Player(25, 25, WIDTH/2, HEIGHT/2, 'red', 0, 0);
 
 // adds two different sets of mobs to the mobs array
 for (i = 0; i < 10; i++){
-  mobs.push(new Mob(60,60, 200, 100, 'pink', Math.random()*-2, Math.random()*-2));
-  console.log(mobs);
+  mobs1.push(new Mob(60,60, 200, 100, 'pink', Math.random()*-2, Math.random()*-2));
 }
 
-while (mobs.length < 20){
-  mobs.push(new Mob(10,10, 250, 200, 'purple', Math.random()*-2, Math.random()*-2));
+while (mobs2.length < 20){
+  mobs2.push(new Mob(10,10, 250, 200, 'purple', Math.random()*-2, Math.random()*-2));
 }
 
+// creating object with keys pressed
+
+let keysDown = {};
+
+addEventListener("keydown", function (e) {
+    keysDown[e.key] = true;
+}, false);
+
+addEventListener("keyup", function (e) {
+    delete keysDown[e.key];
+}, false);
 
 // gets mouse position when clicked
 addEventListener('mousemove', e => {
@@ -201,16 +239,16 @@ function drawText(color, font, align, base, text, x, y) {
 }
 
 // ########## updates all elements on canvas ##########
-function update(mod) {
+function update() {
   player.update();
   //updates all mobs in a group
-  for (let m of mobs){
+  for (let m of mobs1){
     m.update();
     if (player.collide(m)){
       m.spliced = true;
     }
   }
-  for (let m in mobs){
+  for (let m in mobs1){
     if (mobs[m].spliced){
       mobs.splice(m, 1);
     }
@@ -248,7 +286,6 @@ function main() {
   if (initialized) {
     update(gDelta);
     draw();
-    console.log(player.inbounds());
   }
   then = now;
   requestAnimationFrame(main);
