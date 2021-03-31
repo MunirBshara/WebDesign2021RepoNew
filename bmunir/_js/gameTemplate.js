@@ -22,8 +22,6 @@ let walls = [];
 //array for mobs/enemies
 let mobs1 = [];
 
-//ball list
-let ball = [];
 
 // lets us know if game is initialized
 let initialized = false;
@@ -199,6 +197,33 @@ class Mob extends Sprite {
     ctx.strokeRect(this.x, this.y, this.w, this.h);
   }
 }
+class Ball extends Sprite {
+  constructor(w, h, x, y, c, vx, vy) {
+    super(w, h, x, y, c);
+    this.vx = vx;
+    this.vy = vy;
+    this.type = "normal";
+  }
+  update() {
+    this.x += this.vx;
+    this.y += this.vy;
+    if (!this.inbounds()) {
+      if (this.x < 0 || this.x > WIDTH) {
+        this.vx *= -1;
+      }
+      if (this.y < 0 || this.y > HEIGHT) {
+        this.vy *= -1;
+      }
+      // alert('out of bounds');
+      // console.log('out of bounds');
+    }
+  }
+  draw() {
+    ctx.fillStyle = this.color;
+    ctx.fillRect(this.x, this.y, this.w, this.h);
+    ctx.strokeRect(this.x, this.y, this.w, this.h);
+  }
+}
 
 class Wall extends Sprite {
   constructor(w, h, x, y, c) {
@@ -214,6 +239,9 @@ class Wall extends Sprite {
 
 // ###################### INSTANTIATE CLASSES ##########################
 let player = new Player(70, 10, WIDTH/2 -35, HEIGHT -100, 'red', 0, 0);
+
+let ball = new Ball(5, 5, WIDTH/2 -2.5, HEIGHT -120, 'green', (Math.random()-.5)*3, -Math.random()*2);
+
 
 // adds two different sets of mobs to the mobs array
 spawnMob(20);
@@ -255,6 +283,7 @@ addEventListener('mousedown', function (e) {
 // ########## UPDATE ALL ELEMENTS ON CANVAS ################################
 function update() {
   player.update();
+  ball.update();
   //updates all mobs in a group
   for (let w of walls) {
     console.log(w);
@@ -285,6 +314,7 @@ function draw() {
   drawText('black', "24px Helvetica", "left", "top", "mousepos: " + mouseX + " " + mouseY, 0, 0);
   drawText('black', "24px Helvetica", "left", "top", "mouseclick: " + mouseClickX + " " + mouseClickY, 0, 32);
   player.draw();
+  ball.draw();
 
   for (let w of walls) {
     w.draw();
