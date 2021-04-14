@@ -1,6 +1,7 @@
 //sources
 // https://eloquentjavascript.net/code/chapter/17_canvas.js
 // https://developer.mozilla.org/en-US/docs/Web/API/Element/mousemove_event
+// Mr. Cozort's given code
 
 //##################### ALL GLOBALS AND UTILITY FUNCTIONS ###################
 
@@ -10,52 +11,30 @@ let canvas;
 let ctx;
 let WIDTH = 768;
 let HEIGHT = 768;
-let GRAVITY = 9.8;
 let POINTS = 0;
 let paused = false;
-let timerThen = Math.floor(Date.now() / 1000);
-
 
 //walls
 let walls = [];
 
 //array for mobs/enemies
 let mobs1 = [];
-
-
 // lets us know if game is initialized
 let initialized = false;
+// lets us know if a game is deleted
+let deleted = false;
 
-// setup mouse position variables
-let mouseX = 0;
-let mouseY = 0;
-
-// object setting mousePos
-let mousePos = {
-  x: 0,
-  y: 0
-};
-
-let mouseClicks = {
-  x: 0,
-  y: 0
-};
-
-let mouseClickX = 0;
-let mouseClickY = 0;
-
-
-//spawner
+//spawner for the two lanes of "mobs"
 function spawnMob(x) {
-  for(i = 0; i < x; i++){
-    if(i<10){
-      mobs1.push(new Mob(30, 10, 200+i*35, 200, 'red', 0, 0));
-    }
-    else if(i<20){
-      mobs1.push(new Mob(30, 10, 200+(i-10)*35, 185, 'yellow', 0, 0));
+  for (i = 0; i < 20; i++) {
+    if (i < 10) {
+      mobs1.push(new Mob(30, 10, 200 + i * 35, 200, 'red', 0, 0));
+    } else if (i < 20) {
+      mobs1.push(new Mob(30, 10, 200 + (i - 10) * 35, 185, 'yellow', 0, 0));
     }
   }
 }
+
 // draws text on canvas
 function drawText(color, font, align, base, text, x, y) {
   ctx.fillStyle = color;
@@ -64,8 +43,6 @@ function drawText(color, font, align, base, text, x, y) {
   ctx.textBaseline = base;
   ctx.fillText(text, x, y);
 }
-
-
 
 //########################### Initialize game function #######################
 
@@ -85,7 +62,6 @@ function init() {
   document.getElementById("chuck").style.width = canvas.width + 'px';
   document.getElementById("chuck").style.height = canvas.height + 'px';
   ctx = canvas.getContext('2d');
-  initialized = true;
 }
 
 
@@ -99,17 +75,18 @@ class Sprite {
     this.color = c;
     this.spliced = false;
   }
+  //checking for inbounds
   inbounds() {
     if (this.x + this.w < WIDTH &&
       this.x > 0 &&
       this.y > 0 &&
       this.y + this.h < HEIGHT) {
-      console.log('inbounds..');
       return true;
     } else {
       return false;
     }
   }
+  //checking for object collisions
   collide(obj) {
     if (this.x <= obj.x + obj.w &&
       obj.x <= this.x + this.w &&
@@ -121,6 +98,7 @@ class Sprite {
   }
 }
 
+//Player class
 class Player extends Sprite {
   constructor(w, h, x, y, c, vx, vy) {
     super(w, h, x, y, c);
@@ -137,8 +115,7 @@ class Player extends Sprite {
     } else if ('d' in keysDown || 'D' in keysDown) { // Player control
       this.vy = 0;
       this.vx = this.speed;
-    } 
-    else {
+    } else {
       this.vx = 0;
       this.vy = 0;
     }
@@ -170,6 +147,7 @@ class Player extends Sprite {
   }
 }
 
+//mob class for the palettes needing to be destroyed
 class Mob extends Sprite {
   constructor(w, h, x, y, c, vx, vy) {
     super(w, h, x, y, c);
@@ -197,11 +175,15 @@ class Mob extends Sprite {
     ctx.strokeRect(this.x, this.y, this.w, this.h);
   }
 }
+
+//ball class for all balls in the game
 class Ball extends Sprite {
-  constructor(w, h, x, y, c, vx, vy) {
+  constructor(w, h, x, y, c, vx, vy, lastmovementx, lastmovementy) {
     super(w, h, x, y, c);
     this.vx = vx;
     this.vy = vy;
+    this.lastmovementx = lastmovementx;
+    this.lastmovementy = lastmovementy;
     this.type = "normal";
   }
   update() {
@@ -209,14 +191,41 @@ class Ball extends Sprite {
     this.y += this.vy;
     if (!this.inbounds()) {
       if (this.x < 0 || this.x > WIDTH) {
-        this.vx *= -1;
+        this.lastmovementx = true;
+        this.lastmovementy = false;
+        this.vx *= -1.05;
       }
-      if (this.y < 0 || this.y > HEIGHT) {
-        this.vy *= -1;
+      if (this.y < 0) {
+        if (this.lastmovementx != null) {
+          this.lastmovementx = false;
+        }
+        this.lastmovementy = true;
+        this.vy *= -1.05;
+      }
+      if (this.y > HEIGHT) {
+        return true;
       }
       // alert('out of bounds');
       // console.log('out of bounds');
     }
+  }
+  draw() {
+    ctx.fillStyle = this.color;
+    ctx.fillRect(this.x, this.y, this.w, this.h);
+    ctx.strokeRect(this.x, this.y, this.w, this.h);
+  }
+}
+
+class Powerup extends Sprite {
+  constructor(w, h, x, y, c, vy, types) {
+    super(w, h, x, y, c);
+    this.vy = vy;
+    this.types = types;
+    this.type = "normal";
+  }
+  update() {
+    this.y += this.vy;
+    this.types = this.types;
   }
   draw() {
     ctx.fillStyle = this.color;
@@ -237,13 +246,16 @@ class Wall extends Sprite {
   }
 }
 
-// ###################### INSTANTIATE CLASSES ##########################
-let player = new Player(70, 10, WIDTH/2 -35, HEIGHT -100, 'red', 0, 0);
+//variables for game instatiation
+let player = new Player(70, 10, WIDTH / 2 - 35, HEIGHT - 100, 'red', 0, 0);
+let ball = new Ball(5, 5, WIDTH / 2 - 2.5, HEIGHT - 120, 'green', 
+  (Math.random() - .5) * 3, -Math.random() * 2, null, true);
+let ball2 = new Ball(5, 5, WIDTH / 2 - 2.5, HEIGHT - 120, 'green', 
+  (Math.random() - .5) * 3, -Math.random() * 2, null, true);
+let balls = [ball, ball2];
+let powerups = [];
 
-let ball = new Ball(5, 5, WIDTH/2 -2.5, HEIGHT -120, 'green', (Math.random()-.5)*3, -Math.random()*2);
-
-
-// adds two different sets of mobs to the mobs array
+// spawns 20 mobs
 spawnMob(20);
 
 // ########################## USER INPUT ###############################
@@ -258,47 +270,67 @@ addEventListener("keyup", function (e) {
   delete keysDown[e.key];
 }, false);
 
-// gets mouse position when clicked
-addEventListener('mousemove', function (e) {
-  mouseX = e.offsetX;
-  mouseY = e.offsetY;
-  // we're gonna use this
-  mousePos = {
-    x: mouseX,
-    y: mouseY
-  };
-});
-
-// gets mouse position when clicked
-addEventListener('mousedown', function (e) {
-  console.log(`Screen X/Y: ${e.screenX}, ${e.screenY}, Client X/Y: ${e.clientX}, ${e.clientY}`);
-  mouseClickX = e.clientX;
-  mouseClickY = e.clientY;
-  mouseClicks = {
-    x: mouseClickX,
-    y: mouseClickY
-  };
-});
-
 // ########## UPDATE ALL ELEMENTS ON CANVAS ################################
 function update() {
   player.update();
-  ball.update();
-  //updates all mobs in a group
-  for (let w of walls) {
-    console.log(w);
-    if (player.collide(w)) {
-      console.log(w);
+  //updates balls and checks to see if ball falls off bottom of map
+  for (b in balls) {
+    if (balls[b].update()) {
+      if (balls.length > 1) {
+        balls.splice(b, 1);
+        continue;
+      } else {
+        balls.splice(b, 1);
+        continue;
+      }
+    }
+    //ball collision with player and movement
+    if (balls[b].collide(player)) {
+      balls[b].vy *= -1;
+      balls[b].lastmovementy == true;
+      balls[b].lastmovementx == false;
     }
   }
-  for (let m of mobs1) {
-    m.update();
-    if (player.collide(m)) {
-      m.spliced = true;
+  //updating the falling powerups
+  for (p in powerups) {
+    powerups[p].update();
+    if (powerups[p].types > .5) {
+      powerups.splice(p, 1);
+      continue;
+    }
+    //debuging
+    console.log(powerups[p].types);
+    //checking powerup collision and random powerup
+    if (powerups[p].collide(player)) {
+      if (powerups[p].types < .25) {
+        balls.push(new Ball(5, 5, WIDTH / 2 - 2.5, HEIGHT - 120, 'green', 
+          (Math.random() - .5) * 3, -Math.random() * 2, null, true));
+      } else if (powerups[p].types < .5) {
+        player.w = player.w / 2;
+      }
+      powerups.splice(p, 1);
     }
   }
+  //checking for mob and ball collisions
   for (let m in mobs1) {
-    if (mobs1[m].spliced) {
+    for (let b in balls) {
+      mobs1[m].update();
+      if (balls[b].collide(mobs1[m])) {
+        powerups.push(new Powerup(10, 10, mobs1[m].x, mobs1[m].y, 'purple', 2, 
+          Math.random()));
+        POINTS = POINTS + 10;
+        deleted = true;
+        if (balls[b].lastmovementy == true || balls[b].y + 5 > 200) {
+          balls[b].vy *= -1;
+        } else if (balls[b].lastmovementx == true) {
+          balls[b].vx *= -1;
+        }
+      }
+    }
+    //checks if mob has been deleted to avoid logic errors with checking all 
+    //the mobs
+    if (deleted) {
+      deleted = false;
       mobs1.splice(m, 1);
     }
   }
@@ -308,37 +340,34 @@ function update() {
 function draw() {
   // clears the canvas before drawing
   ctx.clearRect(0, 0, canvas.width, canvas.height);
-  drawText('black', "24px Helvetica", "left", "top", "Points: " + POINTS, 600, 0);
-  drawText('black', "24px Helvetica", "left", "top", "FPS: " + fps, 400, 0);
-  drawText('black', "24px Helvetica", "left", "top", "Delta: " + gDelta, 400, 32);
-  drawText('black', "24px Helvetica", "left", "top", "mousepos: " + mouseX + " " + mouseY, 0, 0);
-  drawText('black', "24px Helvetica", "left", "top", "mouseclick: " + mouseClickX + " " + mouseClickY, 0, 32);
-  player.draw();
-  ball.draw();
+  drawText('black', "24px Helvetica", "left", "top", "Points: " + POINTS, 0, 0);
 
+  //drawing sprites
+  player.draw();
+  for (let b of balls) {
+    b.draw();
+  }
+  for (let p of powerups) {
+    p.draw();
+  }
   for (let w of walls) {
     w.draw();
   }
   for (let m of mobs1) {
     m.draw();
   }
-
 }
 
 
 // set variables necessary for game loop
-let fps;
 let now;
-let delta;
 let gDelta;
 let then = performance.now();
 
-// ########## MAIN GAME LOOP ##########
-function main() {
-  now = performance.now();
-  delta = now - then;
-  gDelta = (Math.min(delta, 17));
-  fps = Math.ceil(1000 / gDelta);
+//basically the main function
+function change() {
+  initialized = true;
+  document.querySelector('#check').textContent = 'SPEED UP';
   if (initialized) {
     if (!paused) {
       update(gDelta);
@@ -346,5 +375,17 @@ function main() {
     draw();
   }
   then = now;
-  requestAnimationFrame(main);
+
+  //checking for end of game
+  if (mobs1.length != 0 && balls.length != 0) {
+    requestAnimationFrame(change);
+  } else if (mobs1.length == 0) {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    drawText('black', "24px Helvetica", "left", "top", "YOU WIN, WITH: " 
+      + POINTS + " POINTS", 0, 0);
+  } else if (balls.length == 0) {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    drawText('black', "24px Helvetica", "left", "top", "YOU HAVE LOST, WITH: " 
+      + POINTS + " POINTS", 0, 0);
+  }
 }
