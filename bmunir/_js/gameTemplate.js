@@ -13,7 +13,7 @@ let WIDTH = 768;
 let HEIGHT = 768;
 let POINTS = 0;
 let paused = false;
-let powername= "dfsfds";
+let powername= "";
 
 //walls
 let walls = [];
@@ -27,11 +27,19 @@ let deleted = false;
 
 //spawner for the two lanes of "mobs"
 function spawnMob(x) {
-  for (i = 0; i < 20; i++) {
+  for (i = 0; i < 60; i++) {
     if (i < 10) {
       mobs1.push(new Mob(30, 10, 200 + i * 35, 200, 'red', 0, 0));
     } else if (i < 20) {
       mobs1.push(new Mob(30, 10, 200 + (i - 10) * 35, 185, 'yellow', 0, 0));
+    } else if (i < 30) {
+      mobs1.push(new Mob(30, 10, 200 + (i - 20) * 35, 170, 'orange', 0, 0));
+    } else if (i < 40) {
+      mobs1.push(new Mob(30, 10, 200 + (i - 30) * 35, 155, 'magenta', 0, 0));
+    } else if (i < 50) {
+      mobs1.push(new Mob(30, 10, 200 + (i - 40) * 35, 140, 'indigo', 0, 0));
+    } else if (i < 60) {
+      mobs1.push(new Mob(30, 10, 200 + (i - 50) * 35, 125, 'brown', 0, 0));
     }
   }
 }
@@ -62,7 +70,7 @@ function init() {
   canvas.height = HEIGHT;
   document.getElementById("chuck").style.width = canvas.width + 'px';
   document.getElementById("chuck").style.height = canvas.height + 'px';
-  canvas.style = "position: absolute; top: 50px; left: 100PX; border:2px solid blue"
+  canvas.style = "position: absolute; top: 100px; left: 100PX; border:2px solid blue"
   ctx = canvas.getContext('2d');
 }
 
@@ -304,10 +312,6 @@ function update() {
     console.log(powerups[p].types);
     //checking powerup collision and random powerup
     if (powerups[p].collide(player)) {
-      msg1="POWERUP";
-      msg2="OBTAINED";
-      document.getElementById("powerupmsg1").innerHTML = msg1;
-      document.getElementById("powerupmsg2").innerHTML = msg2;
       if (powerups[p].types < .1) {
         powername="NEW POWERUP: EXTRA BALL";
         balls.push(new Ball(5, 5, WIDTH / 2 - 2.5, HEIGHT - 120, 'green', 
@@ -332,9 +336,9 @@ function update() {
           balls[b].vx=balloldy*2;
         }
       }
-      drawText('black', "24px Helvetica", "left", "top", powername, 0, 100);
+
       setTimeout(function(){
-        document.getElementById("powerupmsg1").innerHTML = '';document.getElementById("powerupmsg2").innerHTML = ''; powername="hi"}, 3000);
+        powername=""}, 3000);
       powerups.splice(p, 1);
     }
   }
@@ -368,6 +372,7 @@ function draw() {
   // clears the canvas before drawing
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   drawText('black', "24px Helvetica", "left", "top", "Points: " + POINTS, 0, 0);
+  drawText('black', "24px Helvetica", "left", "top", "" + powername, 0, 745);
 
   //drawing sprites
   player.draw();
