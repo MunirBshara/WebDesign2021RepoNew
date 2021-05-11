@@ -13,6 +13,7 @@ let WIDTH = 768;
 let HEIGHT = 768;
 let POINTS = 0;
 let paused = false;
+let powername= "dfsfds";
 
 //walls
 let walls = [];
@@ -61,6 +62,7 @@ function init() {
   canvas.height = HEIGHT;
   document.getElementById("chuck").style.width = canvas.width + 'px';
   document.getElementById("chuck").style.height = canvas.height + 'px';
+  canvas.style = "position: absolute; top: 50px; left: 100PX; border:2px solid blue"
   ctx = canvas.getContext('2d');
 }
 
@@ -302,12 +304,37 @@ function update() {
     console.log(powerups[p].types);
     //checking powerup collision and random powerup
     if (powerups[p].collide(player)) {
-      if (powerups[p].types < .25) {
+      msg1="POWERUP";
+      msg2="OBTAINED";
+      document.getElementById("powerupmsg1").innerHTML = msg1;
+      document.getElementById("powerupmsg2").innerHTML = msg2;
+      if (powerups[p].types < .1) {
+        powername="NEW POWERUP: EXTRA BALL";
         balls.push(new Ball(5, 5, WIDTH / 2 - 2.5, HEIGHT - 120, 'green', 
           (Math.random() - .5) * 3, -Math.random() * 2, null, true));
-      } else if (powerups[p].types < .5) {
+      } else if (powerups[p].types < .2) {
+        powername="NEW POWERUP: SMALL PADDLE";
         player.w = player.w / 2;
+      } else if (powerups[p].types < .3) {
+        powername="NEW POWERUP: WIDE PADDLE";
+        player.w = player.w * 2;
+      } else if (powerups[p].types < .4) {
+        powername="NEW POWERUP: FASTER BALLS";
+        for(let b in balls){
+          balls[b].vx=balls[b].vx*2;
+          balls[b].vy=balls[b].vy*2;
+        }
+      } else{
+        powername="NEW POWERUP: GRAVITY FIELD";
+        for(let b in balls){
+          balloldy=balls[b].vy
+          balls[b].vy=balls[b].vx;
+          balls[b].vx=balloldy*2;
+        }
       }
+      drawText('black', "24px Helvetica", "left", "top", powername, 0, 100);
+      setTimeout(function(){
+        document.getElementById("powerupmsg1").innerHTML = '';document.getElementById("powerupmsg2").innerHTML = ''; powername="hi"}, 3000);
       powerups.splice(p, 1);
     }
   }
