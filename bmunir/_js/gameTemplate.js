@@ -139,10 +139,6 @@ class Player extends Sprite {
       if (this.x + this.w >= WIDTH) {
         this.x = WIDTH - this.w;
       }
-      if (this.y + this.h >= HEIGHT) {
-        this.y = HEIGHT - this.h;
-        this.canjump = true;
-      }
       // alert('out of bounds');
       // console.log('out of bounds');
     }
@@ -188,13 +184,16 @@ class Mob extends Sprite {
 
 //ball class for all balls in the game
 class Ball extends Sprite {
-  constructor(w, h, x, y, c, vx, vy, lastmovementx, lastmovementy) {
+  
+  constructor(w, h, x, y, c, vx, vy, oldx, oldy, lastmovementx, lastmovementy) {
     super(w, h, x, y, c);
     this.vx = vx;
     this.vy = vy;
     this.lastmovementx = lastmovementx;
     this.lastmovementy = lastmovementy;
     this.type = "normal";
+    this.oldx=oldx;
+    this.oldy=oldy;
   }
   update() {
     this.x += this.vx;
@@ -220,9 +219,13 @@ class Ball extends Sprite {
     }
   }
   draw() {
+    ctx.beginPath();
+    ctx.arc(this.x, this.y, 5, 0, 2 * Math.PI);
     ctx.fillStyle = this.color;
-    ctx.fillRect(this.x, this.y, this.w, this.h);
-    ctx.strokeRect(this.x, this.y, this.w, this.h);
+    ctx.fill();
+    //ctx.strokeRect(this.x, this.y, this.w, this.h);
+    ctx.stroke();
+    ctx.closePath();
   }
 }
 
@@ -257,7 +260,7 @@ class Wall extends Sprite {
 }
 
 //variables for game instatiation
-let player = new Player(70, 10, WIDTH / 2 - 35, HEIGHT - 100, 'red', 0, 0);
+let player = new Player(70, 10, WIDTH / 2 - 35, HEIGHT - 100, 'blue', 0, 0);
 let ball = new Ball(5, 5, WIDTH / 2 - 2.5, HEIGHT - 120, 'green', 
   (Math.random() - .5) * 3, -Math.random() * 2, null, true);
 let ball2 = new Ball(5, 5, WIDTH / 2 - 2.5, HEIGHT - 120, 'green', 
@@ -312,6 +315,11 @@ function update() {
     console.log(powerups[p].types);
     //checking powerup collision and random powerup
     if (powerups[p].collide(player)) {
+      ctx.save();
+      ctx.rotate(.17);
+      ctx.style="position: absolute; top: 100px; left: 10PX; border:2px solid blue"
+      //ctx.fillRect();
+      //ctx.restore();
       if (powerups[p].types < .1) {
         powername="NEW POWERUP: EXTRA BALL";
         balls.push(new Ball(5, 5, WIDTH / 2 - 2.5, HEIGHT - 120, 'green', 
