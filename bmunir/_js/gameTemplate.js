@@ -1,6 +1,16 @@
 //sources
 // https://eloquentjavascript.net/code/chapter/17_canvas.js
+//    Making canvas
 // https://developer.mozilla.org/en-US/docs/Web/API/Element/mousemove_event
+//    Tracking mouse
+// https://subscription.packtpub.com/book/web_development/9781849691369/4/ch04lvl1sec49/creating-a-mirror-transform
+//    Transformations of canvas'
+// https://developer.mozilla.org/en-US/docs/Web/HTML/Element/marquee
+//    marquee thingy
+// https://www.w3schools.com/tags/tryit.asp?filename=tryhtml_button_css
+//    Style of button
+//https://www.w3schools.com/howto/tryit.asp?filename=tryhow_css_center-vertical2_btn
+//    Centering
 // Mr. Cozort's given code
 
 //##################### ALL GLOBALS AND UTILITY FUNCTIONS ###################
@@ -14,6 +24,7 @@ let HEIGHT = 768;
 let POINTS = 0;
 let paused = false;
 let powername= "";
+let translated=false;
 
 //walls
 let walls = [];
@@ -70,7 +81,7 @@ function init() {
   canvas.height = HEIGHT;
   document.getElementById("chuck").style.width = canvas.width + 'px';
   document.getElementById("chuck").style.height = canvas.height + 'px';
-  canvas.style = "position: absolute; top: 100px; left: 100PX; border:2px solid blue"
+  canvas.style = "position: absolute; top: 100px; margin: auto; left: 30%; border:2px solid blue"
   ctx = canvas.getContext('2d');
 }
 
@@ -229,6 +240,7 @@ class Ball extends Sprite {
   }
 }
 
+//powerup class for all powerups which drop in game
 class Powerup extends Sprite {
   constructor(w, h, x, y, c, vy, types) {
     super(w, h, x, y, c);
@@ -247,6 +259,7 @@ class Powerup extends Sprite {
   }
 }
 
+//wall class to bound the walls of the canvas
 class Wall extends Sprite {
   constructor(w, h, x, y, c) {
     super(w, h, x, y, c);
@@ -315,11 +328,25 @@ function update() {
     console.log(powerups[p].types);
     //checking powerup collision and random powerup
     if (powerups[p].collide(player)) {
-      ctx.save();
-      ctx.rotate(.17);
-      ctx.style="position: absolute; top: 100px; left: 10PX; border:2px solid blue"
+      /**Trying rotation: 
+       * ctx.save();
+       * ctx.clearRect(0, 0, canvas.width, canvas.height);
+       * ctx.translate(100, 100);
+       * ctx.rotate(.17);
+       * canvas.stylex = "position: absolute; top: 200px; left: 200PX; border:2px solid blue"
+      */
+      ctx.translate(canvas.width/1000000, canvas.height);
+      ctx.scale(1, -1);
+      if(translated!=true){
+        translated=true;
+      }
+      else{
+        translated=false;
+      }
+      
       //ctx.fillRect();
       //ctx.restore();
+      //checking for different types of powerups
       if (powerups[p].types < .1) {
         powername="NEW POWERUP: EXTRA BALL";
         balls.push(new Ball(5, 5, WIDTH / 2 - 2.5, HEIGHT - 120, 'green', 
@@ -379,8 +406,8 @@ function update() {
 function draw() {
   // clears the canvas before drawing
   ctx.clearRect(0, 0, canvas.width, canvas.height);
-  drawText('black', "24px Helvetica", "left", "top", "Points: " + POINTS, 0, 0);
-  drawText('black', "24px Helvetica", "left", "top", "" + powername, 0, 745);
+  drawText('white', "24px Helvetica", "left", "top", "Points: " + POINTS, 0, 0);
+  drawText('white', "24px Helvetica", "left", "top", "" + powername, 0, 745);
 
   //drawing sprites
   player.draw();
@@ -420,12 +447,20 @@ function change() {
   if (mobs1.length != 0 && balls.length != 0) {
     requestAnimationFrame(change);
   } else if (mobs1.length == 0) {
+    if(translated){
+      ctx.translate(canvas.width/1000000, canvas.height);
+      ctx.scale(1, -1);
+    }
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-    drawText('black', "24px Helvetica", "left", "top", "YOU WIN, WITH: " 
+    drawText('green', "24px Helvetica", "left", "top", "YOU WIN, WITH: " 
       + POINTS + " POINTS", 0, 0);
   } else if (balls.length == 0) {
+    if(translated){
+      ctx.translate(canvas.width/1000000, canvas.height);
+      ctx.scale(1, -1);
+    }
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-    drawText('black', "24px Helvetica", "left", "top", "YOU HAVE LOST, WITH: " 
+    drawText('red', "24px Helvetica", "left", "top", "YOU HAVE LOST, WITH: " 
       + POINTS + " POINTS", 0, 0);
   }
 }
